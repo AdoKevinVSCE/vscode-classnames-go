@@ -1,0 +1,86 @@
+{
+  "publisher": "KevinLaw",
+  "name": "classnames-go",
+  "displayName": "ClassNames Go",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Warp classname strings or to classNames() or clsx() or adds className attribute with classnames or clsx in React files.",
+  "author": "Kevin Law <kevinlaw1024@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/AdoKevinVSCE/vscode-classnames-go#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AdoKevinVSCE/vscode-classnames-go"
+  },
+  "bugs": {
+    "url": "https://github.com/AdoKevinVSCE/vscode-classnames-go/issues"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters"
+  ],
+  "main": "./dist/index.js",
+  "icon": "res/icon.png",
+  "engines": {
+    "vscode": "^1.0.0"
+  },
+  "activationEvents": [
+    "onLanguage:typescriptreact",
+    "onLanguage:javascriptreact"
+  ],
+  "scripts": {
+    "build": "tsup --minify --no-sourcemap",
+    "dev": "tsup --watch --sourcemap",
+    "lint": "eslint .",
+    "pack": "vsce package --no-dependencies",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "release": "pnpm run typecheck && pnpm run lint && pnpm run build && bumpp"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^22.19.3",
+    "@types/vscode": "1.78.1",
+    "@vscode/vsce": "^3.7.1",
+    "bumpp": "^10.3.2",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.7.4",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.50.0",
+    "vite": "^7.3.0",
+    "vitest": "^3.2.4",
+    "ts-morph": "^27.0.2"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "classnames-go.go",
+        "title": "ClassNames Go: Go to ClassNames"
+      }
+    ],
+    "configuration": {
+      "title": "ClassNames Go",
+      "type": "object",
+      "properties": {
+        "classnames-go.functionName": {
+          "type": "string",
+          "default": "classNames",
+          "description": "The name of the function to be generated."
+        },
+        "classnames-go.packageName": {
+          "type": "string",
+          "default": "classnames",
+          "description": "The name of the package to be imported."
+        },
+        "classnames-go.autoImport": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to automatically import function from package if function is not imported."
+        }
+      }
+    }
+  },
+  "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319"
+}
