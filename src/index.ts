@@ -1,4 +1,4 @@
-import { JsxAttribute } from 'ts-morph';
+import { JsxAttribute, type SourceFile } from 'ts-morph';
 import * as vscode from 'vscode';
 import { Selection } from 'vscode';
 import { getNearestElement } from './astHelper';
@@ -44,7 +44,7 @@ export function activate(context: vscode.ExtensionContext) {
               position.translate(0, 12 + functionName.length + 2),
               position.translate(0, 12 + functionName.length + 2)
             );
-            await addClassNamesImport(document, editor, functionName, packageName);
+            await addClassNamesImport(editor, functionName, packageName, sourceFile);
           }
           return;
         } else {
@@ -87,7 +87,7 @@ export function activate(context: vscode.ExtensionContext) {
 
             // 自动添加 import
             if (autoImport) {
-              await addClassNamesImport(document, editor, functionName, packageName);
+              await addClassNamesImport(editor, functionName, packageName, sourceFile);
             }
           }
         }
@@ -106,13 +106,12 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function addClassNamesImport(
-  document: vscode.TextDocument,
   editor: vscode.TextEditor,
   functionName: string,
-  packageName: string
+  packageName: string,
+  sourceFile: SourceFile
 ) {
-  const text = document.getText();
-  const insertion = calculateImportInsertion(text, functionName, packageName);
+  const insertion = calculateImportInsertion(sourceFile, functionName, packageName);
 
   if (!insertion) {
     return;

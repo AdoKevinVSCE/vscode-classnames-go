@@ -1,4 +1,4 @@
-import { type Node, SyntaxKind } from 'ts-morph';
+import { type Node, SyntaxKind, type SourceFile } from 'ts-morph';
 
 export interface ConversionResult {
   shouldConvert: boolean;
@@ -72,14 +72,40 @@ export function analyzeAndConvert(node: Node, functionName: string): ConversionR
 /**
  * 检查是否需要添加 import 语句
  */
-export function needsImport(text: string, functionName: string): boolean {
-  const importPatterns = [
-    new RegExp(`import\\s+.*${functionName}.*from`, 'i'),
-    new RegExp(`import\\s+{.*${functionName}.*}\\s+from`, 'i'),
-    new RegExp(`import\\s+${functionName}\\s+from`, 'i'),
-  ];
+export function needsImport(sourceFile: SourceFile, functionName: string): boolean {
+  const importDeclarations = sourceFile.getImportDeclarations();
 
-  return !importPatterns.some((pattern) => pattern.test(text));
+  // 检查是否已经导入了该函数
+  for (const importDecl of importDeclarations) {
+    // 检查默认导入: import classNames from 'classnames'
+    const defaultImport = importDecl.getDefaultImport();
+    if (defaultImport && defaultImport.getText() === functionName) {
+      return false;
+    }
+
+    // 检查命名导入: import { classNames } from 'classnames'
+    // 或带别名: import { clsx as classNames } from 'clsx'
+    const namedImports = importDecl.getNamedImports();
+    for (const namedImport of namedImports) {
+      // 检查原始名称
+      if (namedImport.getName() === functionName) {
+        return false;
+      }
+      // 检查别名
+      const aliasNode = namedImport.getAliasNode();
+      if (aliasNode && aliasNode.getText() === functionName) {
+        return false;
+      }
+    }
+
+    // 检查命名空间导入: import * as classNames from 'classnames'
+    const namespaceImport = importDecl.getNamespaceImport();
+    if (namespaceImport && namespaceImport.getText() === functionName) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -91,31 +117,54 @@ export interface ImportInsertion {
 }
 
 export function calculateImportInsertion(
-  text: string,
+  sourceFile: SourceFile,
   functionName: string,
   packageName: string
 ): ImportInsertion | null {
   // 如果不需要添加 import，返回 null
-  if (!needsImport(text, functionName)) {
+  if (!needsImport(sourceFile, functionName)) {
     return null;
   }
 
-  const lines = text.split('\n');
-  let insertLine = 0;
+  // 获取所有 import 声明
+  const importDeclarations = sourceFile.getImportDeclarations();
 
-  // 跳过 'use client' / 'use server' 指令
-  for (let i = 0; i < Math.min(5, lines.length); i++) {
-    if (lines[i].trim().startsWith("'use ") || lines[i].trim().startsWith('"use ')) {
-      insertLine = i + 1;
-    } else if (lines[i].trim().startsWith('import')) {
-      insertLine = i + 1;
-    } else {
+  if (importDeclarations.length === 0) {
+    // 没有 import 语句，检查是否有 'use client' / 'use server' 指令
+    let insertLine = 0;
+    const statements = sourceFile.getStatements();
+
+    for (const statement of statements) {
+      // 检查是否是 'use client' 或 'use server' 指令
+      if (statement.getKind() === SyntaxKind.ExpressionStatement) {
+        const expr = statement.asKind(SyntaxKind.ExpressionStatement);
+        if (expr) {
+          const stringLiteral = expr.getExpression();
+          if (stringLiteral.getKind() === SyntaxKind.StringLiteral) {
+            const value = stringLiteral.asKind(SyntaxKind.StringLiteral)?.getLiteralValue();
+            if (value === 'use client' || value === 'use server') {
+              insertLine = expr.getEndLineNumber();
+              continue;
+            }
+          }
+        }
+      }
+      // 遇到非指令语句就停止
       break;
     }
+
+    return {
+      line: insertLine,
+      statement: `import ${functionName} from '${packageName}';\n`,
+    };
   }
 
+  // 找到最后一个 import 语句的结束位置
+  const lastImport = importDeclarations[importDeclarations.length - 1];
+  const endLine = lastImport.getEndLineNumber();
+
   return {
-    line: insertLine,
+    line: endLine,
     statement: `import ${functionName} from '${packageName}';\n`,
   };
 }
@@ -124,16 +173,16 @@ export function calculateImportInsertion(
  * 在文本中插入 import 语句
  */
 export function insertImportStatement(
-  text: string,
+  sourceFile: SourceFile,
   functionName: string,
   packageName: string
 ): string {
-  const insertion = calculateImportInsertion(text, functionName, packageName);
+  const insertion = calculateImportInsertion(sourceFile, functionName, packageName);
   if (!insertion) {
-    return text;
+    return sourceFile.getFullText();
   }
 
-  const lines = text.split('\n');
+  const lines = sourceFile.getFullText().split('\n');
   lines.splice(insertion.line, 0, insertion.statement.trimEnd());
   return lines.join('\n');
 }

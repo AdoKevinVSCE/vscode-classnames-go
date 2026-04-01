@@ -214,31 +214,29 @@ describe('analyzeAndConvert', () => {
 describe('needsImport', () => {
   it('should return true when no import exists', () => {
     const code = `const App = () => <div>Text</div>`;
-    expect(needsImport(code, 'classNames')).toBe(true);
+    const sourceFile = createSourceFile(code);
+    expect(needsImport(sourceFile, 'classNames')).toBe(true);
   });
 
   it('should return false when default import exists', () => {
     const code = `import classNames from 'classnames';
 const App = () => <div>Text</div>`;
-    expect(needsImport(code, 'classNames')).toBe(false);
+    const sourceFile = createSourceFile(code);
+    expect(needsImport(sourceFile, 'classNames')).toBe(false);
   });
 
   it('should return false when named import exists', () => {
     const code = `import { classNames } from 'classnames';
 const App = () => <div>Text</div>`;
-    expect(needsImport(code, 'classNames')).toBe(false);
+    const sourceFile = createSourceFile(code);
+    expect(needsImport(sourceFile, 'classNames')).toBe(false);
   });
 
   it('should return false when import with alias exists', () => {
     const code = `import { clsx as classNames } from 'clsx';
 const App = () => <div>Text</div>`;
-    expect(needsImport(code, 'classNames')).toBe(false);
-  });
-
-  it('should be case insensitive for import detection', () => {
-    const code = `import CLASSNAMES from 'classnames';
-const App = () => <div>Text</div>`;
-    expect(needsImport(code, 'classNames')).toBe(false);
+    const sourceFile = createSourceFile(code);
+    expect(needsImport(sourceFile, 'classNames')).toBe(false);
   });
 });
 
@@ -246,13 +244,15 @@ describe('calculateImportInsertion', () => {
   it('should return null when import already exists', () => {
     const code = `import classNames from 'classnames';
 const App = () => <div>Text</div>`;
-    const result = calculateImportInsertion(code, 'classNames', 'classnames');
+    const sourceFile = createSourceFile(code);
+    const result = calculateImportInsertion(sourceFile, 'classNames', 'classnames');
     expect(result).toBeNull();
   });
 
   it('should insert at line 0 for simple file', () => {
     const code = `const App = () => <div>Text</div>`;
-    const result = calculateImportInsertion(code, 'classNames', 'classnames');
+    const sourceFile = createSourceFile(code);
+    const result = calculateImportInsertion(sourceFile, 'classNames', 'classnames');
     expect(result).not.toBeNull();
     expect(result!.line).toBe(0);
     expect(result!.statement).toBe("import classNames from 'classnames';\n");
@@ -263,7 +263,8 @@ const App = () => <div>Text</div>`;
 import { useState } from 'react';
 
 const App = () => <div>Text</div>`;
-    const result = calculateImportInsertion(code, 'classNames', 'classnames');
+    const sourceFile = createSourceFile(code);
+    const result = calculateImportInsertion(sourceFile, 'classNames', 'classnames');
     expect(result).not.toBeNull();
     expect(result!.line).toBe(2);
   });
@@ -272,7 +273,8 @@ const App = () => <div>Text</div>`;
     const code = `'use client';
 
 const App = () => <div>Text</div>`;
-    const result = calculateImportInsertion(code, 'classNames', 'classnames');
+    const sourceFile = createSourceFile(code);
+    const result = calculateImportInsertion(sourceFile, 'classNames', 'classnames');
     expect(result).not.toBeNull();
     expect(result!.line).toBe(1);
   });
@@ -281,7 +283,8 @@ const App = () => <div>Text</div>`;
     const code = `"use server";
 
 const App = () => <div>Text</div>`;
-    const result = calculateImportInsertion(code, 'classNames', 'classnames');
+    const sourceFile = createSourceFile(code);
+    const result = calculateImportInsertion(sourceFile, 'classNames', 'classnames');
     expect(result).not.toBeNull();
     expect(result!.line).toBe(1);
   });
@@ -291,14 +294,16 @@ const App = () => <div>Text</div>`;
 import React from 'react';
 
 const App = () => <div>Text</div>`;
-    const result = calculateImportInsertion(code, 'classNames', 'classnames');
+    const sourceFile = createSourceFile(code);
+    const result = calculateImportInsertion(sourceFile, 'classNames', 'classnames');
     expect(result).not.toBeNull();
     expect(result!.line).toBe(2);
   });
 
   it('should use custom function and package names', () => {
     const code = `const App = () => <div>Text</div>`;
-    const result = calculateImportInsertion(code, 'clsx', 'clsx');
+    const sourceFile = createSourceFile(code);
+    const result = calculateImportInsertion(sourceFile, 'clsx', 'clsx');
     expect(result).not.toBeNull();
     expect(result!.statement).toBe("import clsx from 'clsx';\n");
   });
@@ -307,7 +312,8 @@ const App = () => <div>Text</div>`;
 describe('insertImportStatement', () => {
   it('should insert import at the beginning of file', () => {
     const code = `const App = () => <div>Text</div>`;
-    const result = insertImportStatement(code, 'classNames', 'classnames');
+    const sourceFile = createSourceFile(code);
+    const result = insertImportStatement(sourceFile, 'classNames', 'classnames');
     expect(result).toBe(`import classNames from 'classnames';
 const App = () => <div>Text</div>`);
   });
@@ -315,7 +321,8 @@ const App = () => <div>Text</div>`);
   it('should not duplicate import if already exists', () => {
     const code = `import classNames from 'classnames';
 const App = () => <div>Text</div>`;
-    const result = insertImportStatement(code, 'classNames', 'classnames');
+    const sourceFile = createSourceFile(code);
+    const result = insertImportStatement(sourceFile, 'classNames', 'classnames');
     expect(result).toBe(code);
   });
 
@@ -323,7 +330,8 @@ const App = () => <div>Text</div>`;
     const code = `import React from 'react';
 
 const App = () => <div>Text</div>`;
-    const result = insertImportStatement(code, 'classNames', 'classnames');
+    const sourceFile = createSourceFile(code);
+    const result = insertImportStatement(sourceFile, 'classNames', 'classnames');
     expect(result).toBe(`import React from 'react';
 import classNames from 'classnames';
 
@@ -334,7 +342,8 @@ const App = () => <div>Text</div>`);
     const code = `'use client';
 
 const App = () => <div>Text</div>`;
-    const result = insertImportStatement(code, 'classNames', 'classnames');
+    const sourceFile = createSourceFile(code);
+    const result = insertImportStatement(sourceFile, 'classNames', 'classnames');
     expect(result).toBe(`'use client';
 import classNames from 'classnames';
 
@@ -347,7 +356,8 @@ import { useState, useEffect } from 'react';
 import styles from './styles.module.css';
 
 const App = () => <div>Text</div>`;
-    const result = insertImportStatement(code, 'classNames', 'classnames');
+    const sourceFile = createSourceFile(code);
+    const result = insertImportStatement(sourceFile, 'classNames', 'classnames');
     expect(result).toBe(`import React from 'react';
 import { useState, useEffect } from 'react';
 import styles from './styles.module.css';
