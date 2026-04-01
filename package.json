@@ -2,7 +2,7 @@
   "publisher": "KevinLaw",
   "name": "classnames-go",
   "displayName": "ClassNames Go",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Warp classname strings or to classNames() or clsx() or adds className attribute with classnames or clsx in React files.",
   "author": "Kevin Law <kevinlaw1024@gmail.com>",
